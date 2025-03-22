@@ -16,35 +16,132 @@ const ClockDimension = {
 };
 
 const time = {
-  totalNumbers: 12,
   allocatedRect: ClockDimension.diameter,
   get totalAllocatedRect() {
     return this.allocatedRect * 4;
   },
-
-  positon: {
-    topPosition: {},
-    rightPosition: {},
-    bottomPosition: {},
-    leftPosition: {},
+  get date() {
+    return new Date();
+  },
+  get seconds() {
+    return this.date.getSeconds();
+  },
+  get minutes() {
+    return this.date.getMinutes();
+  },
+  get hours() {
+    return this.date.getHours();
+  },
+  timeHands: {
+    secondsHand: {
+      dimension: {
+        startX: ClockDimension.x,
+        startY: ClockDimension.y,
+        endX: ClockDimension.x + 50,
+        endY: ClockDimension.y - 85,
+        lineWidth: 1,
+      },
+      length: 80,
+    },
+    minuteHand: {
+      dimension: {
+        startX: ClockDimension.x,
+        startY: ClockDimension.y,
+        endX: ClockDimension.x,
+        endY: ClockDimension.y,
+        lineWidth: 2,
+      },
+      length: 65,
+    },
+    hourHand: {
+      dimension: {
+        startX: ClockDimension.x,
+        startY: ClockDimension.y,
+        endX: ClockDimension.x,
+        endY: ClockDimension.y,
+        lineWidth: 3,
+      },
+      length: 50,
+      get HourIndex() {
+        return (time.hours - 12) * 5 + Math.floor(time.minutes / 15);
+      },
+    },
   },
 };
 
 canvas.width = CanvasDimension.width;
 canvas.height = CanvasDimension.height;
 
-function placeNumbers() {
-  const totalNumbers = 12;
-  for (let i = 1; i <= totalNumbers; i++) {
-    const angle = (2 * Math.PI * i) / totalNumbers - Math.PI / 2; // Adjust angle for "12" at top
-    const x = ClockDimension.x + ClockDimension.radius * Math.cos(angle);
-    const y = ClockDimension.y + ClockDimension.radius * Math.sin(angle);
-    // Draw the number
-    ctx.textAlign = "center"; // Horizontal alignment
-    ctx.textBaseline = "middle"; // Vertical alignment
-    ctx.font = "17px monospace";
-    ctx.fillText(i, x, y);
-  }
+function getHandsCoordinates(length) {
+  return ClockNumsDimensions({
+    circleXpos: ClockDimension.x,
+    circleYPos: ClockDimension.y,
+    length,
+    totalNumbers: 60,
+  });
+}
+
+function getSecsHandCoord() {
+  return getHandsCoordinates(time.timeHands.secondsHand.length);
+}
+
+function getMinsHandCoord() {
+  return getHandsCoordinates(time.timeHands.minuteHand.length);
+}
+
+function getHourHandCoord() {
+  return getHandsCoordinates(time.timeHands.hourHand.length);
+}
+
+function placeNumbers(ctx, { circleXpos, circleYPos, radius, totalNumbers }) {
+  const dimensions = ClockNumsDimensions({
+    circleXpos,
+    circleYPos,
+    radius,
+    totalNumbers,
+  });
+  dimensions.forEach((dimension) => {
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.font = "15px Arial";
+    ctx.fillText(
+      dimension.number == 0 ? 12 : dimension.number,
+      dimension.x,
+      dimension.y
+    );
+  });
+}
+
+function drawHands(ctx) {
+  const startX = ClockDimension.x;
+  const startY = ClockDimension.y;
+  let secondsIndex = time.seconds;
+  let minutesIndex = time.minutes;
+  let hourIndex = time.timeHands.hourHand.HourIndex;
+  // drawing seconds hand
+  drawHand(ctx, {
+    startX,
+    startY,
+    endX: getSecsHandCoord()[secondsIndex].x,
+    endY: getSecsHandCoord()[secondsIndex].y,
+    lineWidth: time.timeHands.secondsHand.dimension.lineWidth,
+  });
+  // drawing minutes hand
+  drawHand(ctx, {
+    startX,
+    startY,
+    endX: getMinsHandCoord()[minutesIndex].x,
+    endY: getMinsHandCoord()[minutesIndex].y,
+    lineWidth: time.timeHands.minuteHand.dimension.lineWidth,
+  });
+  // drawing hours hand
+  drawHand(ctx, {
+    startX,
+    startY,
+    endX: getHourHandCoord()[hourIndex].x,
+    endY: getHourHandCoord()[hourIndex].y,
+    lineWidth: time.timeHands.hourHand.dimension.lineWidth,
+  });
 }
 
 function drawBackground(ctx) {
@@ -55,9 +152,8 @@ function drawBackground(ctx) {
 drawBackground(ctx);
 
 function drawClock(ctx) {
+  ctx.clearRect(0, 0, CanvasDimension.width, CanvasDimension.height);
   const spacing = 20;
-  const shortHandLength = 50;
-  const longHandLength = 70;
   drawCircle(ctx, {
     x: ClockDimension.x,
     y: ClockDimension.y,
@@ -69,21 +165,18 @@ function drawClock(ctx) {
     radius: 3,
     fillStyle: "black",
   });
-  drawLine(ctx, {
-    startX: ClockDimension.x,
-    startY: ClockDimension.y,
-    endX: ClockDimension.x,
-    endY: ClockDimension.y - longHandLength,
-    lineWidth: 1.5,
+  placeNumbers(ctx, {
+    circleXpos: ClockDimension.x,
+    circleYPos: ClockDimension.y,
+    radius: ClockDimension.radius,
+    totalNumbers: 12,
   });
-  drawLine(ctx, {
-    startX: ClockDimension.x,
-    startY: ClockDimension.y,
-    endX: ClockDimension.x + shortHandLength,
-    endY: ClockDimension.y,
-    lineWidth: 2,
-  });
-  placeNumbers();
+  drawHands(ctx);
 }
 
-drawClock(ctx);
+function gameLoop() {
+  drawClock(ctx);
+  window.requestAnimationFrame(gameLoop);
+}
+
+gameLoop();
