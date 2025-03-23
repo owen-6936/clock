@@ -112,6 +112,7 @@ function placeNumbers(ctx, { circleXpos, circleYPos, radius, totalNumbers }) {
   });
 }
 
+// extension of the drawLine function
 function drawHands(ctx) {
   const startX = ClockDimension.x;
   const startY = ClockDimension.y;
